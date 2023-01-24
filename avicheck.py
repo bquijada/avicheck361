@@ -9,14 +9,15 @@ from InquirerPy.base.control import Choice
 import pyfiglet
 from datetime import datetime
 
-
 # import requests
-# from clint.textui import puts, indent, colored
+from clint.textui import puts, indent, colored
+
 # from time import sleep
 # from clint.textui import progress
 
 
-gear_list = ["shovel", "probe", "beacon", "flashlight or headlamp", "fire-making kit", "signaling device", "Extra food and water", "Extra clothing",
+gear_list = ["shovel", "probe", "beacon", "flashlight or headlamp", "fire-making kit", "signaling device",
+             "Extra food and water", "Extra clothing",
              "First aid kit", "Pocket knife/multitool", "sun protection", "sun projection", "emergency shelter - tarp"]
 
 
@@ -54,8 +55,8 @@ def main():
             if action == "Avalanche Report":
                 print("Avi report")
                 next_action_ = display_avi_report(reg)
-                if next_action == "Calculate Slope Evaluation":
-                    avaluator()
+                if next_action_ == "Calculate Slope Evaluation":
+                    avaluator(reg)
                 if next_action == "Go Back":
                     continue
 
@@ -66,9 +67,7 @@ def main():
                     continue
 
             if action == "Recommended Gear":
-                print("Essential list of gear for backcountry exploration:")
-                for gear in gear_list:
-                    print(gear)
+                gear_rec()
                 next_action_ = next_action()
                 if next_action == "Go Back":
                     continue
@@ -83,15 +82,25 @@ def main():
     print(bye_text)
 
 
+def gear_rec():
+    print("\n")
+    print("Essential list of gear for backcountry exploration:")
+    for gear in gear_list:
+        with indent(2, quote="~"):
+            puts(colored.green(gear))
+
+
 def regions():
+    """menu of regions for user to select"""
     region = inquirer.select(
         message="Where will you go?",
-        choices=["Revelstoke", "Golden", "Banff", "Yoho", "Fernie", Choice(value=None, name="Exit")],
+        choices=["Revelstoke", "Golden", "Banff", "Fernie", Choice(value=None, name="Exit")],
     ).execute()
     return region
 
 
 def actions():
+    print("\n")
     action = inquirer.select(
         message="Select Mountain Info you would like to view: ",
         choices=["Avalanche Report", "Weather forecast", "Recommended Gear", "Change Region",
@@ -101,21 +110,27 @@ def actions():
 
 
 def display_avi_report(region):
+    """displays avalanche report"""
+    print("\n")
     print("Avalanche Report for " + region + ":")
     next_action_ = inquirer.select(
         message="Would you like to: ",
         choices=["Calculate Slope Evaluation", "Go Back",
-                ],
+                 ],
     ).execute()
     return next_action_
 
 
 def display_weather(region):
+    """displays weather report"""
+    print("\n")
     print("Weather forecast for " + region + ":")
     return next_action()
 
 
 def next_action():
+    """go back option"""
+    print("\n")
     next_action_ = inquirer.select(
         message="Would you like to: ",
         choices=["Go Back"],
@@ -123,9 +138,32 @@ def next_action():
     return next_action_
 
 
-def avaluator():
-    pass
-
+def avaluator(reg):
+    """calculates a slope evaluation based on avalanche terrain rating and danger rating"""
+    print("The Avaluator is a trip planner that evaluates the potential risk of a slope given "
+          "the avalanche danger rating and the avalanche terrain rating (ATES), returning a warning of"
+          " caution, extra caution, or not recommended. To proceed please select the elevation and "
+          "terrain rating.")
+    print("\n")
+    while True:
+        elevation = inquirer.select(
+            message="What elevation will you be recreating in: ",
+            choices=["Alpine", "Tree Line", "Below Tree Line"],
+        ).execute()
+        ates = inquirer.select(
+            message="What kind of terrain will you be on: ",
+            choices=["simple", "challenging", "complex"],
+        ).execute()
+        print("\n")
+        print("Given an elevation at " + elevation + " in " + reg + " and an ATES rating of " + ates + " your slope "
+                                                                                                      "evaluation "
+                                                                                                      "is ")
+        next_action_ = inquirer.select(
+            message="Would you like to: ",
+            choices=["Use Avaluator again", "Go Back"],
+        ).execute()
+        if next_action_ == "Go Back":
+            break
 
 
 main()
