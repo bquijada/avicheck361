@@ -9,7 +9,7 @@ from InquirerPy.base.control import Choice
 import pyfiglet
 from datetime import datetime
 
-# import requests
+import requests
 from clint.textui import puts, indent, colored
 
 # from time import sleep
@@ -55,8 +55,6 @@ def main():
             if action == "Avalanche Report":
                 print("Avi report")
                 next_action_ = display_avi_report(reg)
-                if next_action_ == "Calculate Slope Evaluation":
-                    avaluator(reg)
                 if next_action == "Go Back":
                     continue
 
@@ -113,12 +111,42 @@ def display_avi_report(region):
     """displays avalanche report"""
     print("\n")
     print("Avalanche Report for " + region + ":")
+    report = get_report()
     next_action_ = inquirer.select(
         message="Would you like to: ",
         choices=["Calculate Slope Evaluation", "Go Back",
                  ],
     ).execute()
+    if next_action_ == "Calculate Slope Evaluation":
+        avaluator(report, region)
     return next_action_
+
+
+def get_report():
+    """search for avalanche report"""
+    response = requests.get('https://api.avalanche.ca/forecasts/en/products/point?lat=50.993293&long=-118.197407')
+    result = response.json()
+    sum = result['report']['highlights']
+    print(sum[3:-4])
+    danger = result['report']['dangerRatings']
+    danger2 = danger[0]
+    danger_rating = []
+    for x in danger2:
+        for y in danger2[x]:
+            elev = danger2[x][y]
+            if y == "alp":
+                alp = elev.get('rating').get('value')
+                print("Danger rating in the Alpine: " + alp)
+                danger_rating.append(alp)
+            if y == "tln":
+                tln = elev.get('rating').get('value')
+                print("Danger rating at Tree Line: " + tln)
+                danger_rating.append(tln)
+            if y == "btl":
+                btl = elev.get('rating').get('value')
+                print("Danger rating Below Tree Line: " + btl)
+                danger_rating.append(btl)
+    return danger_rating
 
 
 def display_weather(region):
@@ -138,7 +166,7 @@ def next_action():
     return next_action_
 
 
-def avaluator(reg):
+def avaluator(report, reg):
     """calculates a slope evaluation based on avalanche terrain rating and danger rating"""
     print("The Avaluator is a trip planner that evaluates the potential risk of a slope given "
           "the avalanche danger rating and the avalanche terrain rating (ATES), returning a warning of"
@@ -155,12 +183,16 @@ def avaluator(reg):
             choices=["simple", "challenging", "complex"],
         ).execute()
         print("\n")
-        print("Given an elevation at " + elevation + " in " + reg + " and an ATES rating of " + ates + " your slope "
-                                                                                                      "evaluation "
-                                                                                                      "is ")
-        next_action_ = inquirer.select(
-            message="Would you like to: ",
-            choices=["Use Avaluator again", "Go Back"],
+        if elevation == "Alpine":
+            choice = 0
+        elif elevation == "Tree Line":
+            choice = 1
+        else:
+            choice = 2
+        print("Given an elevation at " + elevation + " in " + reg + " your danger rating is " + report[choice])
+        print(" This combined with an ATES rating of " + ates + " provides a slope evaluation of: Extra Caution")
+        next_action_ = inquirer.select(message="Would you like to: ",
+                                       choices=["Use Avaluator again", "Go Back"],
         ).execute()
         if next_action_ == "Go Back":
             break
