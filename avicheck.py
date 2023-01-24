@@ -19,6 +19,7 @@ from datetime import datetime
 gear_list = ["shovel", "probe", "beacon", "flashlight or headlamp", "fire-making kit", "signaling device", "Extra food and water", "Extra clothing",
              "First aid kit", "Pocket knife/multitool", "sun protection", "sun projection", "emergency shelter - tarp"]
 
+
 def main():
     """main driver function"""
     reg = None
@@ -47,19 +48,37 @@ def main():
             reg = "Fernie"
         if region is None:
             break
-        action = actions()
-        if action == "Avalanche Report":
-            print("Avi report")
-            display_avi_report(reg)
-        if action == "Weather Forecast":
-            print("Weather")
-            display_weather(reg)
-        if action == "Recommended Gear":
-            for gear in gear_list:
-                print(gear)
-        if action == "Change Region":
-            continue
-        if action == "Exit":
+        while True:
+            breaker = False
+            action = actions()
+            if action == "Avalanche Report":
+                print("Avi report")
+                next_action_ = display_avi_report(reg)
+                if next_action == "Calculate Slope Evaluation":
+                    avaluator()
+                if next_action == "Go Back":
+                    continue
+
+            if action == "Weather forecast":
+                print("Weather")
+                next_action_ = display_weather(reg)
+                if next_action == "Go Back":
+                    continue
+
+            if action == "Recommended Gear":
+                print("Essential list of gear for backcountry exploration:")
+                for gear in gear_list:
+                    print(gear)
+                next_action_ = next_action()
+                if next_action == "Go Back":
+                    continue
+
+            if action == "Change Region":
+                break
+            if action is None:
+                breaker = True
+                break
+        if breaker:
             break
     print(bye_text)
 
@@ -75,7 +94,7 @@ def regions():
 def actions():
     action = inquirer.select(
         message="Select Mountain Info you would like to view: ",
-        choices=["Avalanche Report", "Weather forcast", "Recommended Gear", "Change Region",
+        choices=["Avalanche Report", "Weather forecast", "Recommended Gear", "Change Region",
                  Choice(value=None, name="Exit")],
     ).execute()
     return action
@@ -83,24 +102,29 @@ def actions():
 
 def display_avi_report(region):
     print("Avalanche Report for " + region + ":")
-    next_action = inquirer.select(
+    next_action_ = inquirer.select(
         message="Would you like to: ",
-        choices=["Calculate Slope Evaluation", "Go Back", "Select New Region",
-                 Choice(value=None, name="Exit")],
+        choices=["Calculate Slope Evaluation", "Go Back",
+                ],
     ).execute()
-    return next_action
+    return next_action_
 
 
 def display_weather(region):
     print("Weather forecast for " + region + ":")
-    next_action = inquirer.select(
+    return next_action()
+
+
+def next_action():
+    next_action_ = inquirer.select(
         message="Would you like to: ",
-        choices=["Go Back", "Select New Region",
-                 Choice(value=None, name="Exit")],
+        choices=["Go Back"],
     ).execute()
-    return next_action
+    return next_action_
 
 
+def avaluator():
+    pass
 
 
 
