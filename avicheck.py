@@ -8,6 +8,7 @@ from InquirerPy.base.control import Choice
 # from InquirerPy.separator import Separator
 import pyfiglet
 from datetime import datetime
+from bs4 import BeautifulSoup
 
 import requests
 from clint.textui import puts, indent, colored
@@ -15,6 +16,7 @@ from clint.textui import puts, indent, colored
 # from time import sleep
 # from clint.textui import progress
 
+reg_coord = ["lat=50.993293&long=-118.197407", "lat=52.2201&long=-117.0303", "lat=49.7028&long=-122.9247", "lat=49.4899&long=-117.3174"]
 
 gear_list = ["shovel", "probe", "beacon", "flashlight or headlamp", "fire-making kit", "signaling device",
              "Extra food and water", "Extra clothing",
@@ -24,43 +26,47 @@ gear_list = ["shovel", "probe", "beacon", "flashlight or headlamp", "fire-making
 def main():
     """main driver function"""
     reg = None
+    num = None
     hello_text = pyfiglet.figlet_format("AVI-CHECK", font="colossal", width=110)
-    bye_text = pyfiglet.figlet_format("Goodbye", font="colossal", width=110)
+    bye_text = pyfiglet.figlet_format("See you later", font="colossal", width=110)
     print(hello_text)
-    print("** Welcome to AVI-CHECK, your one stop for trip planning and mountain safety")
-    print("** Use this took to check the current avalanche report, weather forecast, recommended gear, "
+    print(" Welcome to AVI-CHECK, your one stop for trip planning and mountain safety!")
+    print(" Use this tool to check the current avalanche report, weather forecast, recommended gear, "
           "and calculate slope evaluations")
-    print("** Today is", datetime.now())
-    print("** Use the arrow keys to get started!")
+    print(" Today is", datetime.now())
+    print(" Use the arrow keys to get started!")
     while True:
         print("\n")
         region = regions()
-        if region == "Golden":
-            print("Golden")
-            reg = "Golden"
-        if region == "Banff":
-            print("Banff")
-            reg = "Banff"
+        if region == "Jasper":
+            print("Jasper")
+            reg = "Jasper"
+            num = 1
+        if region == "Squamish":
+            print("Squamish")
+            reg = "Squamish"
+            num = 2
         if region == "Revelstoke":
             print("Revelstoke")
             reg = "Revelstoke"
-        if region == "Fernie":
-            print("Fernie")
-            reg = "Fernie"
+            num = 0
+        if region == "Nelson":
+            print("Nelson")
+            reg = "Nelson"
+            num = 3
         if region is None:
             break
         while True:
             breaker = False
             action = actions()
             if action == "Avalanche Report":
-                print("Avi report")
-                next_action_ = display_avi_report(reg)
+                next_action_ = display_avi_report(reg, num)
                 if next_action == "Go Back":
                     continue
 
             if action == "Weather forecast":
                 print("Weather")
-                next_action_ = display_weather(reg)
+                next_action_ = display_weather(reg, num)
                 if next_action == "Go Back":
                     continue
 
@@ -92,7 +98,7 @@ def regions():
     """menu of regions for user to select"""
     region = inquirer.select(
         message="Where will you go?",
-        choices=["Revelstoke", "Golden", "Banff", "Fernie", Choice(value=None, name="Exit")],
+        choices=["Revelstoke", "Jasper", "Squamish", "Nelson", Choice(value=None, name="Exit")],
     ).execute()
     return region
 
@@ -107,11 +113,11 @@ def actions():
     return action
 
 
-def display_avi_report(region):
+def display_avi_report(region, num):
     """displays avalanche report"""
     print("\n")
     print("Avalanche Report for " + region + ":")
-    report = get_report()
+    report = get_report(region, num)
     next_action_ = inquirer.select(
         message="Would you like to: ",
         choices=["Calculate Slope Evaluation", "Go Back",
@@ -122,37 +128,77 @@ def display_avi_report(region):
     return next_action_
 
 
-def get_report():
+def get_report(reg, num):
     """search for avalanche report"""
-    response = requests.get('https://api.avalanche.ca/forecasts/en/products/point?lat=50.993293&long=-118.197407')
+    coordinates = reg_coord[num]
+    # req_string = 'https://api.avalanche.ca/forecasts/en/products/point?' + coordinates
+    response = requests.get('https://api.avalanche.ca/forecasts/en/products/point?' + coordinates)
     result = response.json()
-    sum = result['report']['highlights']
-    print(sum[3:-4])
+    summary = result['report']['highlights']
+    print(BeautifulSoup(summary, features='html.parser').text)
     danger = result['report']['dangerRatings']
     danger2 = danger[0]
     danger_rating = []
+    print("\n")
     for x in danger2:
         for y in danger2[x]:
             elev = danger2[x][y]
             if y == "alp":
                 alp = elev.get('rating').get('value')
-                print("Danger rating in the Alpine: " + alp)
+                if alp == 'low':
+                    puts("Danger rating in Alpine: " + colored.green(alp))
+                elif alp == 'moderate':
+                    puts("Danger rating in Alpine: " + colored.yellow(alp))
+                else:
+                    puts("Danger rating in Alpine: " + colored.red(alp))
                 danger_rating.append(alp)
             if y == "tln":
                 tln = elev.get('rating').get('value')
-                print("Danger rating at Tree Line: " + tln)
+                if tln == 'low':
+                    puts("Danger rating at Tree line: " + colored.green(tln))
+                elif tln == 'moderate':
+                    puts("Danger rating at Tree line: " + colored.yellow(tln))
+                else:
+                    puts("Danger rating at Tree line: " + colored.red(tln))
                 danger_rating.append(tln)
             if y == "btl":
                 btl = elev.get('rating').get('value')
-                print("Danger rating Below Tree Line: " + btl)
+                if btl == 'low':
+                    puts("Danger rating Below Tree Line: " + colored.green(btl))
+                elif btl == 'moderate':
+                    puts("Danger rating Below Tree Line: " + colored.yellow(btl))
+                else:
+                    puts("Danger rating Below Tree Line: " + colored.red(btl))
                 danger_rating.append(btl)
     return danger_rating
 
 
-def display_weather(region):
+def find_color(section):
+    if section == 'low':
+        puts("Danger rating in Alpine: " + colored.green(section))
+    elif section == 'moderate':
+        puts("Danger rating in Alpine: " + colored.yellow(section))
+    else:
+        puts("Danger rating in Alpine: " + colored.red(section))
+
+
+def get_weather(num):
+    """search for weather forecast"""
+    coordinates = reg_coord[num]
+    response = requests.get('https://api.avalanche.ca/forecasts/en/products/point?' + coordinates)
+    result = response.json()
+    summary = result['report']['summaries']
+    for x in summary:
+        if x['type']['value'] == 'weather-summary':
+            summary = x['content']
+            print(BeautifulSoup(summary, features='html.parser').text)
+
+
+def display_weather(region, num):
     """displays weather report"""
     print("\n")
     print("Weather forecast for " + region + ":")
+    get_weather(num)
     return next_action()
 
 
@@ -168,6 +214,7 @@ def next_action():
 
 def avaluator(report, reg):
     """calculates a slope evaluation based on avalanche terrain rating and danger rating"""
+    print("\n")
     print("The Avaluator is a trip planner that evaluates the potential risk of a slope given "
           "the avalanche danger rating and the avalanche terrain rating (ATES), returning a warning of"
           " caution, extra caution, or not recommended. To proceed please select the elevation and "
@@ -189,8 +236,8 @@ def avaluator(report, reg):
             choice = 1
         else:
             choice = 2
-        print("Given an elevation at " + elevation + " in " + reg + " your danger rating is " + report[choice])
-        print(" This combined with an ATES rating of " + ates + " provides a slope evaluation of: Extra Caution")
+        print("Given an elevation at " + elevation + " in " + reg + " your danger rating is " + colored.red(report[choice]))
+        puts("This combined with an ATES rating of " + colored.green(ates) + " results in a slope evaluation of: " + colored.red("Extra Caution"))
         next_action_ = inquirer.select(message="Would you like to: ",
                                        choices=["Use Avaluator again", "Go Back"],
         ).execute()
