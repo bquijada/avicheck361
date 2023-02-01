@@ -3,6 +3,7 @@
 # Date: 1/23/23 
 # Description: Backcountry Planning App
 
+import region
 from InquirerPy import inquirer
 from InquirerPy.base.control import Choice
 # from InquirerPy.separator import Separator
@@ -16,7 +17,7 @@ from clint.textui import puts, indent, colored
 # from time import sleep
 # from clint.textui import progress
 
-reg_coord = ["lat=50.993293&long=-118.197407", "lat=52.2201&long=-117.0303", "lat=49.7028&long=-122.9247", "lat=49.4899&long=-117.3174"]
+reg_coord = ["lat=50.993293&long=-118.197407", "lat=52.2201&long=-117.0303", "lat=49.7028&long=-122.9247", "lat=51.4918&long=-116.0205", "lat=49.4899&long=-117.3174"]
 
 gear_list = ["shovel", "probe", "beacon", "flashlight or headlamp", "fire-making kit", "signaling device",
              "Extra food and water", "Extra clothing",
@@ -25,8 +26,7 @@ gear_list = ["shovel", "probe", "beacon", "flashlight or headlamp", "fire-making
 
 def main():
     """main driver function"""
-    reg = None
-    num = None
+    location = None
     hello_text = pyfiglet.figlet_format("AVI-CHECK", font="colossal", width=110)
     bye_text = pyfiglet.figlet_format("See you later", font="colossal", width=110)
     print(hello_text)
@@ -37,36 +37,35 @@ def main():
     print(" Use the arrow keys to get started!")
     while True:
         print("\n")
-        region = regions()
-        if region == "Jasper":
+        place = regions()
+        if place == "Jasper":
             print("Jasper")
-            reg = "Jasper"
-            num = 1
-        if region == "Squamish":
+            region_1 = region.Region("Jasper", reg_coord[1])
+            location = region_1
+        if place == "Squamish":
             print("Squamish")
-            reg = "Squamish"
-            num = 2
-        if region == "Revelstoke":
+            region_2 = region.Region("Squamish", reg_coord[2])
+            location = region_2
+        if place == "Revelstoke":
             print("Revelstoke")
-            reg = "Revelstoke"
-            num = 0
-        if region == "Nelson":
-            print("Nelson")
-            reg = "Nelson"
-            num = 3
-        if region is None:
+            region_0 = region.Region("Revelstoke", reg_coord[0])
+            location = region_0
+        if place == "Banff":
+            print("Banff")
+            region_3 = region.Region("Banff", reg_coord[3])
+            location = region_3
+        if place is None:
             break
         while True:
             breaker = False
             action = actions()
             if action == "Avalanche Report":
-                next_action_ = display_avi_report(reg, num)
+                next_action_ = display_avi_report(location)
                 if next_action == "Go Back":
                     continue
 
             if action == "Weather forecast":
-                print("Weather")
-                next_action_ = display_weather(reg, num)
+                next_action_ = display_weather(location)
                 if next_action == "Go Back":
                     continue
 
@@ -96,11 +95,11 @@ def gear_rec():
 
 def regions():
     """menu of regions for user to select"""
-    region = inquirer.select(
+    location = inquirer.select(
         message="Where will you go?",
-        choices=["Revelstoke", "Jasper", "Squamish", "Nelson", Choice(value=None, name="Exit")],
+        choices=["Revelstoke", "Jasper", "Squamish", "Banff", Choice(value=None, name="Exit")],
     ).execute()
-    return region
+    return location
 
 
 def actions():
@@ -113,25 +112,24 @@ def actions():
     return action
 
 
-def display_avi_report(region, num):
+def display_avi_report(location):
     """displays avalanche report"""
     print("\n")
-    print("Avalanche Report for " + region + ":")
-    report = get_report(region, num)
+    print("Avalanche Report for " + location.get_name() + ":")
+    report = get_report(location)
     next_action_ = inquirer.select(
         message="Would you like to: ",
         choices=["Calculate Slope Evaluation", "Go Back",
                  ],
     ).execute()
     if next_action_ == "Calculate Slope Evaluation":
-        avaluator(report, region)
+        avaluator(report, location)
     return next_action_
 
 
-def get_report(reg, num):
+def get_report(location):
     """search for avalanche report"""
-    coordinates = reg_coord[num]
-    # req_string = 'https://api.avalanche.ca/forecasts/en/products/point?' + coordinates
+    coordinates = location.get_coord()
     response = requests.get('https://api.avalanche.ca/forecasts/en/products/point?' + coordinates)
     result = response.json()
     summary = result['report']['highlights']
@@ -182,10 +180,9 @@ def find_color(section):
         puts("Danger rating in Alpine: " + colored.red(section))
 
 
-def get_weather(num):
+def get_weather(coord):
     """search for weather forecast"""
-    coordinates = reg_coord[num]
-    response = requests.get('https://api.avalanche.ca/forecasts/en/products/point?' + coordinates)
+    response = requests.get('https://api.avalanche.ca/forecasts/en/products/point?' + coord)
     result = response.json()
     summary = result['report']['summaries']
     for x in summary:
@@ -194,11 +191,11 @@ def get_weather(num):
             print(BeautifulSoup(summary, features='html.parser').text)
 
 
-def display_weather(region, num):
+def display_weather(location):
     """displays weather report"""
     print("\n")
-    print("Weather forecast for " + region + ":")
-    get_weather(num)
+    print("Weather forecast for " + location.get_name() + ":")
+    get_weather(location.get_coord())
     return next_action()
 
 
@@ -236,7 +233,8 @@ def avaluator(report, reg):
             choice = 1
         else:
             choice = 2
-        print("Given an elevation at " + elevation + " in " + reg + " your danger rating is " + colored.red(report[choice]))
+        print("Given an elevation at " + elevation + " in " + reg.get_name()
+              + " your danger rating is " + colored.red(report[choice]))
         puts("This combined with an ATES rating of " + colored.green(ates) + " results in a slope evaluation of: " + colored.red("Extra Caution"))
         next_action_ = inquirer.select(message="Would you like to: ",
                                        choices=["Use Avaluator again", "Go Back"],
