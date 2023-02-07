@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup
 
 import requests
 from clint.textui import puts, indent, colored
+import matrix
 
 # from time import sleep
 # from clint.textui import progress
@@ -233,14 +234,35 @@ def avaluator(report, reg):
             choice = 1
         else:
             choice = 2
+        choices = ["simple", "challenging", "complex"]
+        choices_dr = ["extreme", "high", "considerable", "moderate", "low"]
+        ates_num = choices.index(ates)
+        dr_num = choices_dr.index(report[choice])
         print("Given an elevation at " + elevation + " in " + reg.get_name()
               + " your danger rating is " + colored.red(report[choice]))
-        puts("This combined with an ATES rating of " + colored.green(ates) + " results in a slope evaluation of: " + colored.red("Extra Caution"))
+        puts("This combined with an ATES rating of " + colored.green(ates) + " results in a slope evaluation of: ")
+        slope_eval(ates_num, dr_num)
         next_action_ = inquirer.select(message="Would you like to: ",
                                        choices=["Use Avaluator again", "Go Back"],
         ).execute()
         if next_action_ == "Go Back":
             break
+
+
+def slope_eval(ates, dr):
+    nr = matrix.Recommendation("Not Recommended", "The current conditions for this terrain are very dangerous and it is "
+                                           "recommended to either change terrain or postpone the trip to when conditions "
+                                           "are better.")
+    ec = matrix.Recommendation("Extra Caution", "The current conditions for this terrain are dangerous. If you choose to "
+                                         "proceed, take extra caution and make conservative choices.")
+    c = matrix.Recommendation("Caution",
+                       "The current conditions for this terrain are reasonable, but always take caution while "
+                       "recreating in the back-country")
+    arr = [nr, nr, nr], [nr, nr, nr], [c, ec, nr], [c, c, ec], [c, c, ec]
+    answer = arr[dr][ates]
+    puts(colored.red(answer.get_name()))
+    puts(answer.get_reason())
+
 
 
 main()
