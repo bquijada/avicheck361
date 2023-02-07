@@ -1,7 +1,7 @@
 # Author: Brenda Levy
 # GitHub username: bqujiada
 # Date: 1/23/23 
-# Description: Backcountry Planning App
+# Description: Back-country Planning App
 
 import region
 from InquirerPy import inquirer
@@ -14,6 +14,8 @@ from bs4 import BeautifulSoup
 import requests
 from clint.textui import puts, indent, colored
 import matrix
+from time import sleep
+from rich.console import Console
 
 # from time import sleep
 # from clint.textui import progress
@@ -129,9 +131,30 @@ def display_avi_report(location):
     return next_action_
 
 
+def progress_avi():
+    console = Console()
+    tasks = [f"{n}" for n in range(1, 3)]
+
+    with console.status("[bold magenta]Loading avalanche report...") as status:
+        while tasks:
+            task = tasks.pop(0)
+            sleep(1)
+
+
+def progress_weather():
+    console = Console()
+    tasks = [f"{n}" for n in range(1, 3)]
+
+    with console.status(spinner='weather', status="[bold green]Loading weather...") as status:
+        while tasks:
+            task = tasks.pop(0)
+            sleep(1)
+
+
 def get_report(location):
     """search for avalanche report"""
     coordinates = location.get_coord()
+    progress_avi()
     response = requests.get('https://api.avalanche.ca/forecasts/en/products/point?' + coordinates)
     result = response.json()
     summary = result['report']['highlights']
@@ -185,6 +208,7 @@ def find_color(section):
 
 def get_weather(coord):
     """search for weather forecast"""
+    progress_weather()
     response = requests.get('https://api.avalanche.ca/forecasts/en/products/point?' + coord)
     result = response.json()
     summary = result['report']['summaries']
@@ -246,6 +270,7 @@ def avaluator(report, reg):
         puts("This combined with an ATES rating of " + colored.green(ates) + " results in a slope evaluation of: ")
         prompt_3 = slope_eval(ates_num, dr_num)
         total_prompt = (prompt_1 + prompt_2 + prompt_3)
+        print("\n")
         next_action_ = inquirer.select(message="Would you like to: ",
                                        choices=["Use Avaluator again", "Send to a Friend", "Go Back"],
                                        ).execute()
@@ -275,7 +300,7 @@ def slope_eval(ates, dr):
 
 
 def send_to_friend(prompt):
-    print(prompt)
+    pass
 
 
 main()
