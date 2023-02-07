@@ -18,7 +18,8 @@ import matrix
 # from time import sleep
 # from clint.textui import progress
 
-reg_coord = ["lat=50.993293&long=-118.197407", "lat=52.2201&long=-117.0303", "lat=49.7028&long=-122.9247", "lat=51.4918&long=-116.0205", "lat=49.4899&long=-117.3174"]
+reg_coord = ["lat=50.993293&long=-118.197407", "lat=52.2201&long=-117.0303", "lat=49.7028&long=-122.9247",
+             "lat=51.4918&long=-116.0205", "lat=49.4899&long=-117.3174"]
 
 gear_list = ["shovel", "probe", "beacon", "flashlight or headlamp", "fire-making kit", "signaling device",
              "Extra food and water", "Extra clothing",
@@ -173,6 +174,7 @@ def get_report(location):
 
 
 def find_color(section):
+    """color codes danger ratings"""
     if section == 'low':
         puts("Danger rating in Alpine: " + colored.green(section))
     elif section == 'moderate':
@@ -211,7 +213,7 @@ def next_action():
 
 
 def avaluator(report, reg):
-    """calculates a slope evaluation based on avalanche terrain rating and danger rating"""
+    """gathers information to calculate slope evaluation based on avalanche terrain rating and danger rating"""
     print("\n")
     print("The Avaluator is a trip planner that evaluates the potential risk of a slope given "
           "the avalanche danger rating and the avalanche terrain rating (ATES), returning a warning of"
@@ -238,31 +240,42 @@ def avaluator(report, reg):
         choices_dr = ["extreme", "high", "considerable", "moderate", "low"]
         ates_num = choices.index(ates)
         dr_num = choices_dr.index(report[choice])
-        print("Given an elevation at " + elevation + " in " + reg.get_name()
-              + " your danger rating is " + colored.red(report[choice]))
+        prompt_1 = "Given an elevation at " + elevation + " in " + reg.get_name() + " your danger rating is " + report[choice] + "."
+        prompt_2 = " This combined with an ATES rating of " + ates + " results in a slope evaluation of: "
+        puts("Given an elevation at " + elevation + " in " + reg.get_name() + " your danger rating is " + colored.red(report[choice]))
         puts("This combined with an ATES rating of " + colored.green(ates) + " results in a slope evaluation of: ")
-        slope_eval(ates_num, dr_num)
+        prompt_3 = slope_eval(ates_num, dr_num)
+        total_prompt = (prompt_1 + prompt_2 + prompt_3)
         next_action_ = inquirer.select(message="Would you like to: ",
-                                       choices=["Use Avaluator again", "Go Back"],
-        ).execute()
+                                       choices=["Use Avaluator again", "Send to a Friend", "Go Back"],
+                                       ).execute()
         if next_action_ == "Go Back":
             break
+        if next_action_ == "Send to a Friend":
+            send_to_friend(total_prompt)
 
 
 def slope_eval(ates, dr):
-    nr = matrix.Recommendation("Not Recommended", "The current conditions for this terrain are very dangerous and it is "
-                                           "recommended to either change terrain or postpone the trip to when conditions "
-                                           "are better.")
-    ec = matrix.Recommendation("Extra Caution", "The current conditions for this terrain are dangerous. If you choose to "
-                                         "proceed, take extra caution and make conservative choices.")
-    c = matrix.Recommendation("Caution",
-                       "The current conditions for this terrain are reasonable, but always take caution while "
-                       "recreating in the back-country")
+    """looks at matrix to determine the slope evaluation and displays it for user"""
+    nr = matrix.Recommendation("Not Recommended",
+                               "The current conditions for this terrain are very dangerous and it is "
+                               "recommended to either change terrain or postpone the trip to when conditions "
+                               "are better.")
+    ec = matrix.Recommendation("Extra Caution",
+                               "The current conditions for this terrain are dangerous. If you choose to "
+                               "proceed, take extra caution and make conservative choices.")
+    c = matrix.Recommendation("Caution ",
+                              "The current conditions for this terrain are reasonable, but always take caution while "
+                              "recreating in the back-country")
     arr = [nr, nr, nr], [nr, nr, nr], [c, ec, nr], [c, c, ec], [c, c, ec]
     answer = arr[dr][ates]
     puts(colored.red(answer.get_name()))
     puts(answer.get_reason())
+    return answer.get_name() + ". " + answer.get_reason()
 
+
+def send_to_friend(prompt):
+    print(prompt)
 
 
 main()
