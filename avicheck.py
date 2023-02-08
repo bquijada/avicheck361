@@ -6,19 +6,16 @@
 import region
 from InquirerPy import inquirer
 from InquirerPy.base.control import Choice
-# from InquirerPy.separator import Separator
 import pyfiglet
 from datetime import datetime
 from bs4 import BeautifulSoup
-
+import json
 import requests
 from clint.textui import puts, indent, colored
 import matrix
 from time import sleep
 from rich.console import Console
-
-# from time import sleep
-# from clint.textui import progress
+import zmq
 
 reg_coord = ["lat=50.993293&long=-118.197407", "lat=52.2201&long=-117.0303", "lat=49.7028&long=-122.9247",
              "lat=51.4918&long=-116.0205", "lat=49.4899&long=-117.3174"]
@@ -132,8 +129,9 @@ def display_avi_report(location):
 
 
 def progress_avi():
+    """displays progress spinner"""
     console = Console()
-    tasks = [f"{n}" for n in range(1, 3)]
+    tasks = [f"{n}" for n in range(1, 5)]
 
     with console.status("[bold magenta]Loading avalanche report...") as status:
         while tasks:
@@ -142,8 +140,9 @@ def progress_avi():
 
 
 def progress_weather():
+    """displays progress spinner"""
     console = Console()
-    tasks = [f"{n}" for n in range(1, 3)]
+    tasks = [f"{n}" for n in range(1, 5)]
 
     with console.status(spinner='weather', status="[bold green]Loading weather...") as status:
         while tasks:
@@ -278,6 +277,7 @@ def avaluator(report, reg):
             break
         if next_action_ == "Send to a Friend":
             send_to_friend(total_prompt)
+            break
 
 
 def slope_eval(ates, dr):
@@ -300,7 +300,35 @@ def slope_eval(ates, dr):
 
 
 def send_to_friend(prompt):
-    pass
+    """utilizes partner's microservice to share slope evaluation with a friend via text"""
+    phone_num = inquirer.text(message="Enter phone number to text: ").execute()
+    intro = inquirer.text(message="Write an intro to your message: ").execute()
+    dictionary = {
+        "phone": phone_num,
+        "content": intro + " " + prompt
+    }
+    json_object = json.dumps(dictionary)
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.connect("tcp://localhost:5555")
+    socket.send_json(json_object)
+    console = Console()
+    tasks = [f"{n}" for n in range(1, 5)]
+
+    with console.status("[bold orange]Sending text message...") as status:
+        while tasks:
+            task = tasks.pop(0)
+            sleep(1)
+    stat_update = socket.recv().decode("utf-8")
+    if stat_update == "200":
+        print("Message Successfully Sent!")
+    else:
+        print("Message could not be sent, check number and try again.")
+        next_action_ = inquirer.select(message="Would you like to: ",
+                                       choices=["Try again", "Back to Main Menu"],
+                                       ).execute()
+        if next_action_ == "Try again":
+            send_to_friend(prompt)
 
 
 main()
