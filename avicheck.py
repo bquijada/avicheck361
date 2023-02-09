@@ -142,7 +142,7 @@ def progress_avi():
 def progress_weather():
     """displays progress spinner"""
     console = Console()
-    tasks = [f"{n}" for n in range(1, 5)]
+    tasks = [f"{n}" for n in range(1, 4)]
 
     with console.status(spinner='weather', status="[bold green]Loading weather...") as status:
         while tasks:
@@ -305,12 +305,11 @@ def send_to_friend(prompt):
     intro = inquirer.text(message="Write an intro to your message: ").execute()
     dictionary = {
         "phone": phone_num,
-        "content": intro + " " + prompt
-    }
+        "content": intro + " " + prompt}
     json_object = json.dumps(dictionary)
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
-    socket.connect("tcp://localhost:5555")
+    socket.connect("tcp://localhost:5560")
     socket.send_json(json_object)
     console = Console()
     tasks = [f"{n}" for n in range(1, 5)]
