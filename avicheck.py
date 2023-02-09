@@ -318,8 +318,10 @@ def send_to_friend(prompt):
         while tasks:
             task = tasks.pop(0)
             sleep(1)
-    stat_update = socket.recv().decode("utf-8")
-    if stat_update == "200":
+    response_json = socket.recv_json()
+    result_dict = json.loads(response_json)
+    stat_update = result_dict.get("response")
+    if stat_update == 200:
         print("Message Successfully Sent!")
     else:
         print("Message could not be sent, check number and try again.")
