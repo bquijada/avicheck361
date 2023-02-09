@@ -301,7 +301,7 @@ def slope_eval(ates, dr):
 
 def send_to_friend(prompt):
     """utilizes partner's microservice to share slope evaluation with a friend via text"""
-    phone_num = inquirer.text(message="Enter phone number to text: ").execute()
+    phone_num = inquirer.text(message="Enter 10 digit phone number to text: ").execute()
     intro = inquirer.text(message="Write an intro to your message: ").execute()
     dictionary = {
         "phone": phone_num,
