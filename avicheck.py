@@ -306,11 +306,10 @@ def send_to_friend(prompt):
     dictionary = {
         "phone": phone_num,
         "content": intro + " " + prompt}
-    json_object = json.dumps(dictionary)
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5560")
-    socket.send_json(json_object)
+    socket.send_json(dictionary)
     console = Console()
     tasks = [f"{n}" for n in range(1, 5)]
 
@@ -319,8 +318,7 @@ def send_to_friend(prompt):
             task = tasks.pop(0)
             sleep(1)
     response_json = socket.recv_json()
-    result_dict = json.loads(response_json)
-    stat_update = result_dict.get("response")
+    stat_update = response_json.get("response")
     if stat_update == 200:
         print("Message Successfully Sent!")
     else:
