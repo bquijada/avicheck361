@@ -9,7 +9,6 @@ from InquirerPy.base.control import Choice
 import pyfiglet
 from datetime import datetime
 from bs4 import BeautifulSoup
-import json
 import requests
 from clint.textui import puts, indent, colored
 import matrix
