@@ -156,7 +156,11 @@ def get_report(location):
     progress_avi()
     response = requests.get('https://api.avalanche.ca/forecasts/en/products/point?' + coordinates)
     result = response.json()
+    date = result['report']['dateIssued']
+    valid = result['report']['validUntil']
     summary = result['report']['highlights']
+    print("This summary was published on: " + date + " and is valid until: " + valid + ".")
+    print("\n")
     print(BeautifulSoup(summary, features='html.parser').text)
     danger = result['report']['dangerRatings']
     danger2 = danger[0]
