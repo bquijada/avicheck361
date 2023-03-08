@@ -86,6 +86,7 @@ def main():
 
 
 def gear_rec():
+    """displays recommended gear"""
     print("\n")
     print("Essential list of gear for backcountry exploration:")
     for gear in gear_list:
@@ -103,6 +104,7 @@ def regions():
 
 
 def actions():
+    """options menu"""
     print("\n")
     action = inquirer.select(
         message="Select Mountain Info you would like to view: ",
